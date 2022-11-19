@@ -143,7 +143,11 @@ public class IntersectionTester : MonoBehaviour
             cursorLineRenderer.SetPosition(0, pressStartLmb);
             cursorLineRenderer.SetPosition(1, (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
 
+            
             Segment testingSegment = new Segment(pressStartLmb,(Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
+            Handles.color = Color.green;
+            Handles.DrawWireCube(testingSegment.GetBounds().center, testingSegment.GetBounds().size+(Vector3.one*0.05f));
+            
             foreach ( var node in bvh.EnumerateOverlappingLeafNodes(testingSegment.GetBounds())) {
                 if (!node.IsLeaf) { continue; }
 
