@@ -43,7 +43,16 @@ class Segment : IComparable<Segment>
         dy = end.y - start.y;
     }
 
-
+    public SweepEvent getPossibleSweepEvent(Segment b) {
+        Vector2 isect;
+        if (GeometricPrimitives.GetLineIntersection(this,b,out isect)) {
+            if (GeometricPrimitives.twoPointsCompare(isect, currentSweepPosition)<=0) {
+                return null;
+            }
+            return new SweepEvent(isect);
+        }
+        return null;
+    }
 
 
 
@@ -59,7 +68,7 @@ class Segment : IComparable<Segment>
         Debug.Log(y-yOther+" "+Mathf.Approximately(y,yOther));
         int comp = yOther.CompareTo(y);
 
-        return Mathf.Approximately(y,yOther)?0:comp;
+        return Mathf.Approximately(y,yOther)?0:-comp;
     }
 }
 class PriorityQueueOrdering : Comparer<SweepEvent>

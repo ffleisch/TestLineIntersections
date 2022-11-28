@@ -23,8 +23,8 @@ public class IntersectionTester : MonoBehaviour
     {
         bvh = new BoundingVolumeHierarchy<SegmentAABB>();
         lineRendererParent = gameObject.transform.Find("AllLineRenderers").gameObject;
-
-        for (int i = 0; i < 7; i++) {
+        Random.InitState(0);
+        for (int i = 0; i < 14; i++) {
             Vector2 a = Random.insideUnitCircle * 5;        
             Vector2 b = Random.insideUnitCircle * 5;        
             segments.Add(new List<Vector2> { a,b});
@@ -36,6 +36,13 @@ public class IntersectionTester : MonoBehaviour
             Vector2 a = new Vector2(6, -1.5f + 0.5f*i);
             Vector2 b = a + new Vector2(1, 0)+Random.insideUnitCircle*new Vector2(0.5f,4);
 
+            segments.Add(new List<Vector2> { a,b});
+            bvh.Add(new SegmentAABB(a, b));
+        }
+        for (int i = 0; i < 3; i++) {
+            Vector2 a = Random.insideUnitCircle * new Vector2(1.5f, 0.1f)+new Vector2(-8,-3f+0.5f*i);
+            Vector2 b = a + Vector2.right * 2 + Random.insideUnitCircle * new Vector2(1,0.1f);
+        
             segments.Add(new List<Vector2> { a,b});
             bvh.Add(new SegmentAABB(a, b));
         }
@@ -121,7 +128,7 @@ public class IntersectionTester : MonoBehaviour
             }
 
             bo = new(segmentsRaw);
-        
+            bo.testColours = depthColours; 
             
         }
 

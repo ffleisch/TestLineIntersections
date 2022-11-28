@@ -116,12 +116,44 @@ public class Tree<T> : ICollection<T>, IList<T> where T : IComparable<T>
 			var compare = item.CompareTo(this.Value);
 			if (compare < 0)
 			{
-
-				return this.LeftHand == null ? default : this.LeftHand.NextLarger(item);
+				if (this.LeftHand == null) { return this.Value; }
+				var leftNextLargest = this.LeftHand.NextLarger(item);
+				if (leftNextLargest == null) { return this.Value; }
+				
+				var compare2 = item.CompareTo(leftNextLargest);
+				if (compare2 < 0)
+				{
+					return leftNextLargest;
+				}
+				else
+				{
+					return this.Value;
+				}
 			}
-			else {
-				return this.RightHand == null ? false : this.RightHand.Contains(item);
+			else
+				return this.RightHand == null ? default : this.RightHand.NextLarger(item);
+		}
+	internal T NextSmaller(T item)
+		{
+			var compare = item.CompareTo(this.Value);
+			if (compare > 0)
+			{
+				if (this.RightHand== null) { return this.Value; }
+				var rightNextSmallest = this.RightHand.NextSmaller(item);
+				if (rightNextSmallest == null) { return this.Value; }
+				
+				var compare2 = item.CompareTo(rightNextSmallest);
+				if (compare2 > 0)
+				{
+					return rightNextSmallest;
+				}
+				else
+				{
+					return this.Value;
+				}
 			}
+			else
+				return this.LeftHand== null ? default : this.LeftHand.NextSmaller(item);
 
 
 		}
@@ -395,8 +427,26 @@ public class Tree<T> : ICollection<T>, IList<T> where T : IComparable<T>
 
 		if (RootNode != null)
 		{
-			while (RootNode.Remove(item)) { }
+			while (RootNode.Remove(item)&&RootNode!=null) { }
 		}
+	}
+
+
+	public T NextLarger(T item ) {
+		T outp = default;
+		if (RootNode != null)
+		{
+			outp=RootNode.NextLarger(item);
+		}
+		return outp;
+	}
+	public T NextSmaller(T item ) {
+		T outp = default;
+		if (RootNode != null)
+		{
+			outp=RootNode.NextSmaller(item);
+		}
+		return outp;
 	}
 
 	public T this[int index]
