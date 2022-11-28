@@ -31,8 +31,8 @@ public class Tree<T> : ICollection<T>, IList<T> where T : IComparable<T>
                 else this.LeftHand.Add(item);
             else
                 if (this.RightHand == null)
-                    ((this.RightHand = new Tree<T>.TreeNode(item, this.Tree)).Parent = this).Reconstruct(true);
-                else this.RightHand.Add(item);
+                ((this.RightHand = new Tree<T>.TreeNode(item, this.Tree)).Parent = this).Reconstruct(true);
+            else this.RightHand.Add(item);
         }
 
         public void Clear()
@@ -63,6 +63,28 @@ public class Tree<T> : ICollection<T>, IList<T> where T : IComparable<T>
             array[arrayIndex++] = this.Value;
             if (this.RightHand != null)
                 this.RightHand.CopyTo(array, arrayIndex);
+        }
+
+
+        internal void FindAllEqual(T item, ref List<T> res)
+        {
+            var compare = item.CompareTo(this.Value);
+
+            if (compare == 0)
+            {
+                res.Add(this.Value);
+                if (this.LeftHand != null)
+                    this.LeftHand.FindAllEqual(item, ref res);
+                if (this.RightHand != null)
+                    this.RightHand.FindAllEqual(item, ref res);
+            }
+            if (compare < 0)
+                if (this.LeftHand != null)
+                    this.LeftHand.FindAllEqual(item, ref res);
+            if (compare > 0)
+                if (this.RightHand != null)
+                    this.RightHand.FindAllEqual(item, ref res);
+
         }
 
         public bool IsReadOnly { get { return false; } }
@@ -222,7 +244,7 @@ public class Tree<T> : ICollection<T>, IList<T> where T : IComparable<T>
                 else return this.LeftHand.IndexOf(item);
             else
                 if (this.RightHand == null) return -1;
-                else return this.RightHand.IndexOf(item);
+            else return this.RightHand.IndexOf(item);
         }
 
         public void Insert(int index, T item) { throw new InvalidOperationException(); }
@@ -264,6 +286,7 @@ public class Tree<T> : ICollection<T>, IList<T> where T : IComparable<T>
             }
             set { throw new InvalidOperationException(); }
         }
+
     }
 
     public TreeNode RootNode { get; private set; }
@@ -317,6 +340,14 @@ public class Tree<T> : ICollection<T>, IList<T> where T : IComparable<T>
 
     public void RemoveAt(int index) { if (this.RootNode != null) this.RootNode.RemoveAt(index); }
 
+    public List<T> FindAllEqual(T item)
+    {
+        List<T> outp = new();
+        if (RootNode != null) { 
+            RootNode.FindAllEqual(item, ref outp);
+        }
+        return outp;
+    }
     public T this[int index]
     {
         get

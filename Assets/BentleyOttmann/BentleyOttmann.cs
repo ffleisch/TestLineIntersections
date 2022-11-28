@@ -1,103 +1,119 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using Utils;
 
 
 namespace BentleyOttmann
 {
-	public class BentleyOttman
-	{
+    public class BentleyOttman
+    {
+
+
+        PriorityQueue<SweepEvent, SweepEvent> priorityQueue;
+        List<Segment> segments = new();
+
+        Tree<Segment> sweepLine;
+
+        public BentleyOttman(List<(Vector2, Vector2)> segmentsRaw)
+        {
+
+
+            priorityQueue = new(new PriorityQueueOrdering());
 
 
 
 
-
-		public BentleyOttman(List<(Vector2, Vector2)> segmentsRaw)
-		{
-
-
-			PriorityQueue<SweepEvent, float> priorityQueue = new();
-
-
-			SortedList<(Vector2, Vector2), int> sweepLine = new();
-
-
-			var segments = new List<(Vector2, Vector2)>();
-			foreach (var s in segmentsRaw)
-			{
-				if (s.Item1.x > s.Item2.x)
-				{
-					segments.Add((s.Item2, s.Item1));
-				}
-				else
-				{
-					segments.Add(s);
-				}
-			}
+            foreach (var s in segmentsRaw)
+            {
+                var ns = new Segment(s.Item1, s.Item2);
+                segments.Add(ns);
+                SweepEvent start = new(ns.start,ns);
+                SweepEvent end = new(ns.end);
+                priorityQueue.Enqueue(start, start);
+                priorityQueue.Enqueue(end, end);
+            }
+            segments.Sort(new InitialSegmentOrdering());
+            sweepLine = new();
+        }
 
 
-		}
 
-		public enum EventType
-		{
-			Left,
-			Right,
-			Intersection
-		}
-		public class SweepEvent
-		{
-			Vector2 pos;
-			int segmentIndex;
-			EventType type;
-			public SweepEvent(Vector2 pos, EventType type, int index = -1)
-			{
-				this.pos = pos;
-				this.segmentIndex = index;
-				this.type = type;
-			}
-		}
-	}
+        public void testStep() {
+            var currentEvent =priorityQueue.Dequeue();
+            poslast = currentEvent.point;
+            Segment requestSegment = new(poslast,poslast);
+            sweeplineCanidates = sweepLine.FindAllEqual(requestSegment);
+            Debug.Log(sweeplineCanidates);
+
+            //step 6 
+            //add all segments containing poslast to the sweepline
+            if (currentEvent.segment != null) {
+                sweepLine.Add(currentEvent.segment);
+            }
 
 
-	public class Segment : IComparable
-	{
-		Vector2 s;
-		Vector2 e;
+        }
 
-		Segment(Vector2 s, Vector2 e)
-		{
-			if (s.x < e.x)
-			{
-				this.s = s;
-				this.e = e;
-			}
-			if (s.x > e.x)
-			{
-				this.s = e;
-				this.e = s;
-			}
-			if (s.x == e.x)
-			{
-				if (s.y < e.y)
-				{
-					this.s = s;
-					this.e = e;
-				}
-				else
-				{
-					this.s = e;
-					this.e = s;
-				}
-			}
-		}
 
-		public int CompareTo(object obj)
-		{
-			throw new NotImplementedException();
-		}
-	}
+        Vector2 poslast=Vector2.positiveInfinity;
+        List<Segment> sweeplineCanidates;
+
+        public void debugDraw()
+
+        {
+            //Debug.Log("Debug");
+
+
+
+            /*for(int i = 0; i < segments.Count; i++)
+            {
+                Color c = new Color((i%5)/4f,((int)(i/5f)%5)/4f,0);
+                Handles.color = c;
+                Segment s = segments[i];
+                Handles.DrawWireCube(s.start,Vector3.one * 0.1f);
+            }*/
+
+
+            Handles.DrawWireCube(poslast, Vector3.one * 0.1f);
+
+            
+            Vector2 mouse = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            foreach (var s in segments)
+            {
+                float y = 0;
+                bool intersects;
+                if (GeometricPrimitives.GetLineIntersectionX(s, mouse, out y, out intersects))
+                {
+                    if (!intersects)
+                    {
+                        Handles.color = Color.blue;
+                    }
+                    else
+                    {
+                        Handles.color = Color.cyan;
+                    }
+                    Handles.DrawWireCube(new Vector2(mouse.x, y), Vector3.one * 0.1f);
+
+                }
+
+            }
+            Handles.color = Color.red;
+            foreach (var s in sweeplineCanidates) {
+                Debug.Log(s);
+                Handles.DrawLine(s.start,s.end);
+            }
+
+
+        }
+
+    }
+
+
+
+
 
 
 }

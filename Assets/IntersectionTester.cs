@@ -16,13 +16,33 @@ public class IntersectionTester : MonoBehaviour
     [SerializeField]
     private Color[] depthColours;
 
-    BoundingVolumeHierarchy<Segment> bvh;
+    BoundingVolumeHierarchy<SegmentAABB> bvh;
 
     // Start is called before the first frame update
     void Start()
     {
-        bvh = new BoundingVolumeHierarchy<Segment>();
+        bvh = new BoundingVolumeHierarchy<SegmentAABB>();
         lineRendererParent = gameObject.transform.Find("AllLineRenderers").gameObject;
+
+        for (int i = 0; i < 7; i++) {
+            Vector2 a = Random.insideUnitCircle * 5;        
+            Vector2 b = Random.insideUnitCircle * 5;        
+            segments.Add(new List<Vector2> { a,b});
+            bvh.Add(new SegmentAABB(a, b));
+        }
+
+        for (int i = 0; i < 7; i++)
+        {
+            Vector2 a = new Vector2(6, -1.5f + 0.5f*i);
+            Vector2 b = a + new Vector2(1, 0)+Random.insideUnitCircle*new Vector2(0.5f,4);
+
+            segments.Add(new List<Vector2> { a,b});
+            bvh.Add(new SegmentAABB(a, b));
+        }
+        Vector2 av =new Vector2(6.5f,-3);
+        Vector2 bv =new Vector2(6.5f,3);
+        segments.Add(new List<Vector2> { av,bv});
+        bvh.Add(new SegmentAABB(av, bv));
         //segments.Add(new List<Vector2> { new Vector2(0, 0), new Vector2(1, -1) });
         //segments.Add(new List<Vector2> { new Vector2(1, 1), new Vector2(2, 1), new Vector2(2, 2) });
         cursorLineRenderer = Instantiate(MyLineRenderer);
@@ -35,6 +55,8 @@ public class IntersectionTester : MonoBehaviour
     // Update is called once per frame
     Vector2 pressStartRmb;
     Vector2 pressStartLmb;
+
+    BentleyOttmann.BentleyOttman bo;
 
     void Update()
     {
@@ -58,7 +80,7 @@ public class IntersectionTester : MonoBehaviour
         if (Input.GetMouseButtonUp(1)) { 
             Vector2 pressEnd = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             segments.Add(new List<Vector2> { pressStartRmb,pressEnd });
-            bvh.Add(new Segment(pressStartRmb,pressEnd));
+            bvh.Add(new SegmentAABB(pressStartRmb,pressEnd));
         }
 
         if (Input.GetMouseButtonDown(0)) {
@@ -78,7 +100,7 @@ public class IntersectionTester : MonoBehaviour
             if (lastList.Count >= 2) {
                 Vector2 p1=lastList[lastList.Count-2];
                 Vector2 p2=lastList[lastList.Count-1];
-                bvh.Add(new Segment(p1,p2));
+                bvh.Add(new SegmentAABB(p1,p2));
             }
 
 
@@ -86,7 +108,27 @@ public class IntersectionTester : MonoBehaviour
             pressStartRmb = press;
         }
 
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            List<(Vector2, Vector2)> segmentsRaw=new();
+            foreach (List<Vector2> l in segments)
+            {
 
+                for(int i=1;i<l.Count;i++)
+                {
+                    segmentsRaw.Add((l[i-1],l[i]));
+                }
+            }
+
+            bo = new(segmentsRaw);
+        
+            
+        }
+
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            bo.testStep();
+        }
         updateLineRenderers();
     
     }
@@ -144,7 +186,7 @@ public class IntersectionTester : MonoBehaviour
             cursorLineRenderer.SetPosition(1, (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
 
             
-            Segment testingSegment = new Segment(pressStartLmb,(Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
+            SegmentAABB testingSegment = new SegmentAABB(pressStartLmb,(Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
             Handles.color = Color.green;
             Handles.DrawWireCube(testingSegment.GetBounds().center, testingSegment.GetBounds().size+(Vector3.one*0.05f));
             
@@ -162,6 +204,11 @@ public class IntersectionTester : MonoBehaviour
             {
                 cursorLineRenderer.enabled = false;
             }
+        }
+
+        if (bo != null) {
+
+            bo.debugDraw();
         }
 
     }

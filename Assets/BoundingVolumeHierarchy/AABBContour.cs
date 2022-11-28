@@ -4,7 +4,7 @@ using UnityEngine;
 using BoundingVolumeHierarchy;
 using static Math3d;
 
-public class Segment:IBVHClientObject{
+public class SegmentAABB:IBVHClientObject{
     public Vector2 start;
     public Vector2 end;
 
@@ -17,7 +17,7 @@ public class Segment:IBVHClientObject{
         return new Vector2(Mathf.Abs(v2.x), Mathf.Abs(v2.y));
     }
 
-    public Segment(Vector2 start,Vector2 end) {
+    public SegmentAABB(Vector2 start,Vector2 end) {
         this.start = start;
         this.end = end;
         Position = (start+end)/2;
@@ -26,7 +26,7 @@ public class Segment:IBVHClientObject{
     }
 
 
-    public bool intersects(Segment other) {
+    public bool intersects(SegmentAABB other) {
         return AreLineSegmentsCrossing(start,end,other.start,other.end);
     }
 
