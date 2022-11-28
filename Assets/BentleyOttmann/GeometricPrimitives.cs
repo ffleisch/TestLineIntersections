@@ -20,7 +20,7 @@ class Segment : IComparable<Segment>
     public Vector2 start;
     public Vector2 end;
 
-    public Vector2 last_intesection;
+    public int last_intesection_index=-1;
 
     public static Vector2 currentSweepPosition=Vector2.negativeInfinity;
 
@@ -39,7 +39,6 @@ class Segment : IComparable<Segment>
             end = a;
         }
 
-        last_intesection=start;
         dx = end.x - start.x;
         dy = end.y - start.y;
     }
@@ -57,8 +56,10 @@ class Segment : IComparable<Segment>
         float y;
         GeometricPrimitives.GetLineIntersectionX(other,currentSweepPosition,out yOther,out intersectsOther);
         GeometricPrimitives.GetLineIntersectionX(this,currentSweepPosition,out y,out intersects);
+        Debug.Log(y-yOther+" "+Mathf.Approximately(y,yOther));
+        int comp = yOther.CompareTo(y);
 
-        return y.CompareTo(yOther);
+        return Mathf.Approximately(y,yOther)?0:comp;
     }
 }
 class PriorityQueueOrdering : Comparer<SweepEvent>
@@ -89,7 +90,7 @@ class InitialSegmentOrdering : Comparer<Segment>
 
 class GeometricPrimitives
 {
-    public const float EPS =10e-9f;
+    public const float EPS =10e-15f;
     public static int twoPointsCompare(Vector2 a, Vector2 b)
     {
         int res = a.x.CompareTo(b.x);
@@ -132,7 +133,7 @@ class GeometricPrimitives
         if (a.dx == 0)
         {
             y = sweepPosition.y;
-            intersects = a.start.x == sweepPosition.x;
+            intersects = Math.Abs(a.start.x - sweepPosition.x)<EPS;
 
             intersects &= a.start.y <= sweepPosition.y && sweepPosition.y <= a.end.y;
             return false;
@@ -142,8 +143,14 @@ class GeometricPrimitives
             //Segment is not vertical
 
             float ratio =(sweepPosition.x-a.start.x)/a.dx;
+
+
+            if (Mathf.Approximately(ratio, 0))
+                ratio = 0;
+            if (Mathf.Approximately(ratio, 1))
+                ratio = 1;
             intersects = 0 <= ratio && ratio <= 1;
-            y = a.start.y+a.dy*ratio;
+            y = a.start.y*(1-ratio)+a.end.y*ratio;
             return true;
 
 
