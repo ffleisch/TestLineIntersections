@@ -23,8 +23,8 @@ public class IntersectionTester : MonoBehaviour
     {
         bvh = new BoundingVolumeHierarchy<SegmentAABB>();
         lineRendererParent = gameObject.transform.Find("AllLineRenderers").gameObject;
-        Random.InitState(0);
-        for (int i = 0; i < 14; i++) {
+        Random.InitState(1);
+        for (int i = 0; i < 10; i++) {
             Vector2 a = Random.insideUnitCircle * 5;        
             Vector2 b = Random.insideUnitCircle * 5;        
             segments.Add(new List<Vector2> { a,b});

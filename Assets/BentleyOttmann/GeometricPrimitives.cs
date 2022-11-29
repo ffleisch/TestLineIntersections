@@ -65,10 +65,10 @@ class Segment : IComparable<Segment>
         float y;
         GeometricPrimitives.GetLineIntersectionX(other,currentSweepPosition,out yOther,out intersectsOther);
         GeometricPrimitives.GetLineIntersectionX(this,currentSweepPosition,out y,out intersects);
-        Debug.Log(y-yOther+" "+Mathf.Approximately(y,yOther));
-        int comp = yOther.CompareTo(y);
+        //Debug.Log(y-yOther+" "+Mathf.Approximately(y,yOther));
+        int comp = y.CompareTo(yOther);
 
-        return Mathf.Approximately(y,yOther)?0:-comp;
+        return Mathf.Abs(y-yOther)<GeometricPrimitives.EPS?0:comp;
     }
 }
 class PriorityQueueOrdering : Comparer<SweepEvent>
@@ -88,6 +88,27 @@ class PriorityQueueOrdering : Comparer<SweepEvent>
     }
 }
 
+class SegmentAngleComparer : Comparer<Segment>
+{
+    public override int Compare(Segment a, Segment b)
+    {
+        if (a.dx == 0||b.dx==0)
+        {
+            if (a.dx==0 && b.dx == 0)
+            {
+                return b.end.y.CompareTo(a.end.y);
+            }
+            else {
+                return b.dx.CompareTo(a.dx);
+            }
+        }
+        else {
+
+            return -((a.dy / a.dx).CompareTo(b.dy / b.dx));
+        }
+    }
+}
+
 class InitialSegmentOrdering : Comparer<Segment>
 {
     public override int Compare(Segment a, Segment b)
@@ -99,7 +120,7 @@ class InitialSegmentOrdering : Comparer<Segment>
 
 class GeometricPrimitives
 {
-    public const float EPS =10e-15f;
+    public const float EPS =10e-5f;
     public static int twoPointsCompare(Vector2 a, Vector2 b)
     {
         int res = a.x.CompareTo(b.x);

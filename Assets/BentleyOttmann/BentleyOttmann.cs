@@ -48,6 +48,7 @@ namespace BentleyOttmann
         private void addEvents(Segment a, Segment b)
         {
             if (b == null) return;
+            if (a == null) return;
             var possibleEvent = a.getPossibleSweepEvent(b);
             if (possibleEvent != null)
             {
@@ -57,6 +58,7 @@ namespace BentleyOttmann
 
         }
 
+
         public void testStep()
         {
             var currentEvent = priorityQueue.Dequeue();
@@ -65,11 +67,33 @@ namespace BentleyOttmann
             //Step 1
             GraphNodes.Add(poslast);
 
+            String str = "";
+            Segment lastTestSeg = null;
+            foreach (Segment s in sweepLine)
+            {
+                float y;
+                bool isect;
+                GeometricPrimitives.GetLineIntersectionX(s, poslast, out y, out isect);
+                str += y;
+                if (lastTestSeg != null)
+                    str += lastTestSeg.CompareTo(s);
+                lastTestSeg = s;
+                str += "\n";
+            }
+            Debug.Log(str);
+
 
             //Step 2
             Segment.currentSweepPosition = poslast;//very important
             Segment requestSegment = new(poslast, poslast);
-            sweeplineCanidates = sweepLine.FindAllEqual(requestSegment);
+            if (currentEvent.segment == null)
+            {
+                sweeplineCanidates = sweepLine.FindAllEqual(requestSegment);
+            }
+            else
+            {
+                sweeplineCanidates = new List<Segment> { currentEvent.segment };
+            }
             Debug.Log(sweeplineCanidates);
 
             //Step 3
@@ -91,37 +115,33 @@ namespace BentleyOttmann
 
             //step 5
             sweeplineCanidates.Reverse();
+            //sweeplineCanidates.Sort(new SegmentAngleComparer());
+
             var nextLarger = sweepLine.NextLarger(requestSegment);
             var nextSmaller = sweepLine.NextSmaller(requestSegment);
 
             nextLargerTest = nextLarger;
             nextSmallerTest = nextSmaller;
 
-            //
+            //step 6 
+            //add all segments containing poslast to the sweepline
             foreach (var s in sweeplineCanidates)
             {
                 sweepLine.Add(s);
             }
-            //step 6 
-            //add all segments containing poslast to the sweepline
-            debugEvents.Clear();
-            if (currentEvent.segment != null)
-            {
-                currentEvent.segment.last_intesection_index = current_index;
-                sweepLine.Add(currentEvent.segment);
-                addEvents(currentEvent.segment, nextLarger);
-                addEvents(currentEvent.segment, nextSmaller);
-            }
-
 
             //step 7 create new Events
+            debugEvents.Clear();
             Debug.Log(sweeplineCanidates.Count);
             if (sweeplineCanidates.Count > 0)
             {
                 addEvents(sweeplineCanidates[0], nextSmaller);
                 addEvents(sweeplineCanidates[sweeplineCanidates.Count - 1], nextLarger);
             }
-
+            else
+            {
+                addEvents(nextSmaller, nextLarger);
+            }
         }
 
 
@@ -129,14 +149,14 @@ namespace BentleyOttmann
         List<Segment> sweeplineCanidates;
         Segment nextLargerTest;
         Segment nextSmallerTest;
-        List<SweepEvent> debugEvents=new();
+        List<SweepEvent> debugEvents = new();
         public void debugDraw()
 
         {
             //Debug.Log("Debug");
 
 
-                Handles.color = Color.blue;
+            Handles.color = Color.blue;
 
             /*for(int i = 0; i < segments.Count; i++)
             {
@@ -167,7 +187,6 @@ namespace BentleyOttmann
                     if (!intersects)
                     {
                         Handles.color = Color.blue;
-                Handles.color = Color.blue;
                     }
                     else
                     {
@@ -203,17 +222,16 @@ namespace BentleyOttmann
                 num++;
             }
 
-            if (sweeplineCanidates != null)
+            /*if (sweeplineCanidates != null)
             {
                 num = 0;
-                Handles.color = Color.red;
                 foreach (var s in sweeplineCanidates)
                 {
-                    Handles.color = num == 0 ? Color.red : Color.yellow;
-                    Handles.DrawLine(s.start, s.end, 2);
+                    Handles.color = num == 0 ? new Color(1, 1, 1, 0.5f) : new Color(0, 0, 0, 0.5f);
+                    Handles.DrawLine((Vector3)s.start + Vector3.back * 0.01f, (Vector3)s.end + Vector3.back * 0.01f, 7);
                     num++;
                 }
-            }
+            }*/
 
             foreach ((int a, int b) in GraphEdges)
             {
@@ -222,25 +240,29 @@ namespace BentleyOttmann
                 Vector2 delta = pb - pa;
                 delta = delta.normalized;
                 Handles.color = Color.cyan;
-                Handles.DrawLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
+                //Handles.DrawLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
+                Handles.DrawDottedLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
 
             }
-            foreach (SweepEvent s in debugEvents) {
+            foreach (SweepEvent s in debugEvents)
+            {
                 Handles.color = Color.red;
-                Handles.DrawWireCube(s.point,Vector3.one*0.3f);
+                Handles.DrawWireCube(s.point, Vector3.one * 0.3f);
             }
+
+            /*
             if (nextLargerTest != null)
             {
 
-                Handles.color = new Color(0,0,1,0.5f);
+                Handles.color = new Color(0, 0, 1, 0.5f);
                 Handles.DrawLine(nextLargerTest.start, nextLargerTest.end, 5);
             }
             if (nextSmallerTest != null)
             {
 
-                Handles.color = new Color(1,0,1,0.5f);
+                Handles.color = new Color(1, 0, 1, 0.5f);
                 Handles.DrawLine(nextSmallerTest.start, nextSmallerTest.end, 5);
-            }
+            }*/
 
         }
 
