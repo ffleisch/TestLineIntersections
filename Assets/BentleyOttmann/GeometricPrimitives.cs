@@ -20,7 +20,9 @@ class Segment : IComparable<Segment>
     public Vector2 start;
     public Vector2 end;
 
-    public int last_intesection_index=-1;
+    public int LastIntersectionIndex=-1;
+
+    public SweepEvent associatedEvent = null;
 
     public static Vector2 currentSweepPosition=Vector2.negativeInfinity;
 

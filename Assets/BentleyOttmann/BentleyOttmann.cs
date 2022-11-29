@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Utils;
@@ -12,7 +13,8 @@ namespace BentleyOttmann
     {
 
 
-        PriorityQueue<SweepEvent, SweepEvent> priorityQueue;
+        //PriorityQueue<SweepEvent, SweepEvent> priorityQueue;
+        SortedSet<SweepEvent> priorityQueue;
         List<Segment> segments = new();
 
         Tree<Segment> sweepLine;
@@ -38,8 +40,10 @@ namespace BentleyOttmann
                 segments.Add(ns);
                 SweepEvent start = new(ns.start, ns);
                 SweepEvent end = new(ns.end);
-                priorityQueue.Enqueue(start, start);
-                priorityQueue.Enqueue(end, end);
+                //priorityQueue.Enqueue(start, start);
+                //priorityQueue.Enqueue(end, end);
+                priorityQueue.Add(start);
+                priorityQueue.Add(end);
             }
             segments.Sort(new InitialSegmentOrdering());
             sweepLine = new();
@@ -52,23 +56,38 @@ namespace BentleyOttmann
             var possibleEvent = a.getPossibleSweepEvent(b);
             if (possibleEvent != null)
             {
-                priorityQueue.Enqueue(possibleEvent, possibleEvent);
+                //priorityQueue.Enqueue(possibleEvent, possibleEvent);
+                a.associatedEvent = possibleEvent;
+                b.associatedEvent = possibleEvent;
+                priorityQueue.Add(possibleEvent);
                 debugEvents.Add(possibleEvent);
             }
 
         }
 
+        private void removeAssociatedEvents(Segment a)
+        {
+            if (a != null && a.associatedEvent != null)
+            {
+                deletedElements.Add(a.associatedEvent);
+                priorityQueue.Remove(a.associatedEvent);
+            }
+
+        }
 
         public void testStep()
         {
-            var currentEvent = priorityQueue.Dequeue();
-            poslast = currentEvent.point;
+            //var currentEvent = priorityQueue.Dequeue();
+            var currentEvent = priorityQueue.First();
+            priorityQueue.Remove(currentEvent);
+
+            sweepPos = currentEvent.point;
 
             //Step 1
-            GraphNodes.Add(poslast);
+            GraphNodes.Add(sweepPos);
 
             String str = "";
-            Segment lastTestSeg = null;
+            /*Segment lastTestSeg = null;
             foreach (Segment s in sweepLine)
             {
                 float y;
@@ -80,12 +99,12 @@ namespace BentleyOttmann
                 lastTestSeg = s;
                 str += "\n";
             }
-            Debug.Log(str);
+            Debug.Log(str);*/
 
 
             //Step 2
-            Segment.currentSweepPosition = poslast;//very important
-            Segment requestSegment = new(poslast, poslast);
+            Segment.currentSweepPosition = sweepPos;//very important
+            Segment requestSegment = new(sweepPos, sweepPos);
             if (currentEvent.segment == null)
             {
                 sweeplineCanidates = sweepLine.FindAllEqual(requestSegment);
@@ -101,17 +120,41 @@ namespace BentleyOttmann
             int current_index = GraphNodes.Count - 1;
             foreach (Segment s in sweeplineCanidates)
             {
-                if (s.last_intesection_index != -1)
+                if (s.LastIntersectionIndex != -1)
                 {
-                    GraphEdges.Add((s.last_intesection_index, current_index));
+                    GraphEdges.Add((s.LastIntersectionIndex, current_index));
 
                 }
-                s.last_intesection_index = current_index;
+                s.LastIntersectionIndex = current_index;
             }
 
             //step 4
+
+            str = "";
+            foreach (Segment s in sweepLine)
+            {
+                float y;
+                bool isect;
+                GeometricPrimitives.GetLineIntersectionX(s, sweepPos, out y, out isect);
+                str += y + " ";
+            }
+            Debug.Log(sweepPos.y+" "+sweeplineCanidates.Count);
+            Debug.Log(str);
+
             sweepLine.DeleteAllEqual(requestSegment);
-            sweeplineCanidates.RemoveAll(item => item.end == poslast);
+
+            str = "";
+            foreach (Segment s in sweepLine)
+            {
+                float y;
+                bool isect;
+                GeometricPrimitives.GetLineIntersectionX(s, sweepPos, out y, out isect);
+                str += y + " ";
+            }
+            Debug.Log(str);
+
+
+            sweeplineCanidates.RemoveAll(item => item.end == sweepPos);
 
             //step 5
             sweeplineCanidates.Reverse();
@@ -132,9 +175,12 @@ namespace BentleyOttmann
 
             //step 7 create new Events
             debugEvents.Clear();
+            deletedElements.Clear();
             Debug.Log(sweeplineCanidates.Count);
             if (sweeplineCanidates.Count > 0)
             {
+                removeAssociatedEvents(sweeplineCanidates[0]);
+                removeAssociatedEvents(sweeplineCanidates[sweeplineCanidates.Count - 1]);
                 addEvents(sweeplineCanidates[0], nextSmaller);
                 addEvents(sweeplineCanidates[sweeplineCanidates.Count - 1], nextLarger);
             }
@@ -145,11 +191,12 @@ namespace BentleyOttmann
         }
 
 
-        Vector2 poslast = Vector2.positiveInfinity;
+        Vector2 sweepPos = Vector2.positiveInfinity;
         List<Segment> sweeplineCanidates;
         Segment nextLargerTest;
         Segment nextSmallerTest;
         List<SweepEvent> debugEvents = new();
+        List<SweepEvent> deletedElements = new();
         public void debugDraw()
 
         {
@@ -167,12 +214,11 @@ namespace BentleyOttmann
             }*/
 
 
-            Handles.DrawWireCube(poslast, Vector3.one * 0.1f);
+            Handles.DrawWireCube(sweepPos, Vector3.one * 0.1f);
 
 
             Handles.color = Color.yellow;
             Handles.DrawDottedLine(new Vector2(Segment.currentSweepPosition.x, -10), new Vector2(Segment.currentSweepPosition.x, 10), 1);
-
             Vector2 mouse = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             int num = 0;
             foreach (var s in sweepLine)
@@ -199,9 +245,10 @@ namespace BentleyOttmann
 
                 /*if (GeometricPrimitives.GetLineIntersectionX(s, Segment.currentSweepPosition, out y, out intersects))
 				{
-					if (intersects)
+					if (intersects)nextLarger
 					{
 
+                removeAssociatedEvents(nextSmaller);
 					Segment reqSeg = new(poslast, poslast);
 					int comp = reqSeg.CompareTo(s);
 
@@ -217,7 +264,7 @@ namespace BentleyOttmann
 				}*/
 
                 Handles.color = testColours[num % testColours.Length];
-                Handles.DrawLine(s.start, s.end, 2);
+                Handles.DrawLine(s.start, s.end, 4);
 
                 num++;
             }
@@ -228,27 +275,42 @@ namespace BentleyOttmann
                 foreach (var s in sweeplineCanidates)
                 {
                     Handles.color = num == 0 ? new Color(1, 1, 1, 0.5f) : new Color(0, 0, 0, 0.5f);
-                    Handles.DrawLine((Vector3)s.start + Vector3.back * 0.01f, (Vector3)s.end + Vector3.back * 0.01f, 7);
+                    Handles.DrawLine((Vector3)s.start + Vector3.back * 0.01f, (Vector3)s.end + Vector3.back * 0.01f, 7);nextLarger
                     num++;
                 }
             }*/
-
+            num = 0;
             foreach ((int a, int b) in GraphEdges)
             {
                 Vector2 pa = GraphNodes[a];
                 Vector2 pb = GraphNodes[b];
                 Vector2 delta = pb - pa;
-                delta = delta.normalized;
-                Handles.color = Color.cyan;
+                //delta = delta.normalized;
+                Handles.color = testColours[num % testColours.Length];//Color.cyan;
                 //Handles.DrawLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
-                Handles.DrawDottedLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
+                Handles.DrawLine(pa, pb, 1);
+                //Handles.DrawDottedLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
+                num += 1;
 
             }
             foreach (SweepEvent s in debugEvents)
             {
+                Handles.color = Color.green;
+                Handles.DrawWireCube(s.point, Vector3.one * 0.3f);
+            }
+            foreach (SweepEvent s in deletedElements)
+            {
                 Handles.color = Color.red;
                 Handles.DrawWireCube(s.point, Vector3.one * 0.3f);
             }
+
+            foreach (SweepEvent s in priorityQueue)
+            {
+                Handles.color = Color.yellow;
+                Handles.DrawWireCube(s.point, Vector3.one * 0.2f);
+            }
+
+
 
             /*
             if (nextLargerTest != null)
@@ -268,15 +330,5 @@ namespace BentleyOttmann
 
     }
 
-
-
-
-
-
 }
-
-
-
-
-
 
