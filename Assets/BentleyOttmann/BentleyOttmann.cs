@@ -9,85 +9,94 @@ using Utils;
 
 namespace BentleyOttmann
 {
-    public class BentleyOttman
-    {
+	public class BentleyOttman
+	{
 
 
-        //PriorityQueue<SweepEvent, SweepEvent> priorityQueue;
-        SortedSet<SweepEvent> priorityQueue;
-        List<Segment> segments = new();
+		//PriorityQueue<SweepEvent, SweepEvent> priorityQueue;
+		SortedSet<SweepEvent> priorityQueue;
+		List<Segment> segments = new();
 
-        Tree<Segment> sweepLine;
+		Tree<Segment> sweepLine;
 
-        List<Vector2> GraphNodes = new();
-        List<(int, int)> GraphEdges = new();
-
-
-        public Color[] testColours;
-
-        public BentleyOttman(List<(Vector2, Vector2)> segmentsRaw)
-        {
+		List<Vector2> GraphNodes = new();
+		List<(int, int)> GraphEdges = new();
 
 
-            priorityQueue = new(new PriorityQueueOrdering());
+		public Color[] testColours;
+
+		public BentleyOttman(List<(Vector2, Vector2)> segmentsRaw)
+		{
+
+
+			priorityQueue = new(new PriorityQueueOrdering());
 
 
 
 
-            foreach (var s in segmentsRaw)
-            {
-                var ns = new Segment(s.Item1, s.Item2);
-                segments.Add(ns);
-                SweepEvent start = new(ns.start, ns);
-                SweepEvent end = new(ns.end);
-                //priorityQueue.Enqueue(start, start);
-                //priorityQueue.Enqueue(end, end);
-                priorityQueue.Add(start);
-                priorityQueue.Add(end);
-            }
-            segments.Sort(new InitialSegmentOrdering());
-            sweepLine = new();
-        }
+			foreach (var s in segmentsRaw)
+			{
+				var ns = new Segment(s.Item1, s.Item2);
+				segments.Add(ns);
+			}
+			segments.Sort(new InitialSegmentOrdering());
 
-        private void addEvents(Segment a, Segment b)
-        {
-            if (b == null) return;
-            if (a == null) return;
-            var possibleEvent = a.getPossibleSweepEvent(b);
-            if (possibleEvent != null)
-            {
-                //priorityQueue.Enqueue(possibleEvent, possibleEvent);
-                a.associatedEvent = possibleEvent;
-                b.associatedEvent = possibleEvent;
-                priorityQueue.Add(possibleEvent);
-                debugEvents.Add(possibleEvent);
-            }
+			foreach (var ns in segments)
+			{
+				SweepEvent start = new(ns.start, ns);
+				SweepEvent end = new(ns.end);
+				//priorityQueue.Enqueue(start, start);
+				//priorityQueue.Enqueue(end, end);
+				priorityQueue.Add(start);
+				priorityQueue.Add(end);
+			}
 
-        }
+			sweepLine = new();
+		}
 
-        private void removeAssociatedEvents(Segment a)
-        {
-            if (a != null && a.associatedEvent != null)
-            {
-                deletedElements.Add(a.associatedEvent);
-                priorityQueue.Remove(a.associatedEvent);
-            }
+		private void addEvents(Segment a, Segment b)
+		{
+			if (b == null) return;
+			if (a == null) return;
+			var possibleEvent = a.getPossibleSweepEvent(b);
+			if (possibleEvent != null)
+			{
+				//priorityQueue.Enqueue(possibleEvent, possibleEvent);
+				a.associatedEvent = possibleEvent;
+				b.associatedEvent = possibleEvent;
+				priorityQueue.Add(possibleEvent);
+				debugEvents.Add(possibleEvent);
+			}
 
-        }
+		}
 
-        public void testStep()
-        {
-            //var currentEvent = priorityQueue.Dequeue();
-            var currentEvent = priorityQueue.First();
-            priorityQueue.Remove(currentEvent);
+		private void removeAssociatedEvents(Segment a)
+		{
+			if (a != null && a.associatedEvent != null)
+			{
+				deletedElements.Add(a.associatedEvent);
+				priorityQueue.Remove(a.associatedEvent);
+			}
 
-            sweepPos = currentEvent.point;
+		}
 
-            //Step 1
-            GraphNodes.Add(sweepPos);
+		public void testStep()
+		{
+			//var currentEvent = priorityQueue.Dequeue();
+			var currentEvent = priorityQueue.First();
+			priorityQueue.Remove(currentEvent);
 
-            String str = "";
-            /*Segment lastTestSeg = null;
+			sweepPos = currentEvent.point;
+
+			//Step 1
+			if (!(GraphNodes.Count > 0 && GraphNodes[GraphNodes.Count-1] == sweepPos)) { 
+				GraphNodes.Add(sweepPos);
+			}
+			
+			
+			
+			String str = "";
+			/*Segment lastTestSeg = null;
             foreach (Segment s in sweepLine)
             {
                 float y;
@@ -102,110 +111,111 @@ namespace BentleyOttmann
             Debug.Log(str);*/
 
 
-            //Step 2
-            Segment.currentSweepPosition = sweepPos;//very important
-            Segment requestSegment = new(sweepPos, sweepPos);
-            if (currentEvent.segment == null)
-            {
-                sweeplineCanidates = sweepLine.FindAllEqual(requestSegment);
-            }
-            else
-            {
-                sweeplineCanidates = new List<Segment> { currentEvent.segment };
-            }
-            Debug.Log(sweeplineCanidates);
+			//Step 2
+			Segment.currentSweepPosition = sweepPos;//very important
+			Segment requestSegment = new(sweepPos, sweepPos);
+			if (currentEvent.segment == null)
+			{
+				sweeplineCanidates = sweepLine.FindAllEqual(requestSegment);
+			}
+			else
+			{
+				sweeplineCanidates = new List<Segment> { currentEvent.segment };
+			}
 
-            //Step 3
+			Debug.Log(sweeplineCanidates);
 
-            int current_index = GraphNodes.Count - 1;
-            foreach (Segment s in sweeplineCanidates)
-            {
-                if (s.LastIntersectionIndex != -1)
-                {
-                    GraphEdges.Add((s.LastIntersectionIndex, current_index));
+			//Step 3
 
-                }
-                s.LastIntersectionIndex = current_index;
-            }
+			int current_index = GraphNodes.Count - 1;
+			foreach (Segment s in sweeplineCanidates)
+			{
+				if (s.LastIntersectionIndex != -1)
+				{
+					GraphEdges.Add((s.LastIntersectionIndex, current_index));
+				}
+				s.LastIntersectionIndex = current_index;
+			}
 
-            //step 4
+			//step 4
 
-            str = "";
-            foreach (Segment s in sweepLine)
-            {
-                float y;
-                bool isect;
-                GeometricPrimitives.GetLineIntersectionX(s, sweepPos, out y, out isect);
-                str += y + " ";
-            }
-            Debug.Log(sweepPos.y+" "+sweeplineCanidates.Count);
-            Debug.Log(str);
+			str = "";
+			foreach (Segment s in sweepLine)
+			{
+				float y;
+				bool isect;
+				GeometricPrimitives.GetLineIntersectionX(s, sweepPos, out y, out isect);
+				str += y + " ";
+			}
+			Debug.Log(sweepPos.y + " " + sweeplineCanidates.Count);
+			Debug.Log(str);
 
-            sweepLine.DeleteAllEqual(requestSegment);
+			if (currentEvent.segment == null)
+			{
+				sweepLine.DeleteAllEqual(requestSegment);
+			}
+			str = "";
+			foreach (Segment s in sweepLine)
+			{
+				float y;
+				bool isect;
+				GeometricPrimitives.GetLineIntersectionX(s, sweepPos, out y, out isect);
+				str += y + " ";
+			}
+			Debug.Log(str);
 
-            str = "";
-            foreach (Segment s in sweepLine)
-            {
-                float y;
-                bool isect;
-                GeometricPrimitives.GetLineIntersectionX(s, sweepPos, out y, out isect);
-                str += y + " ";
-            }
-            Debug.Log(str);
+			sweeplineCanidates.RemoveAll(item => item.end == sweepPos);
 
+			//step 5
+			sweeplineCanidates.Reverse();
+			//sweeplineCanidates.Sort(new SegmentAngleComparer());
 
-            sweeplineCanidates.RemoveAll(item => item.end == sweepPos);
+			var nextLarger = sweepLine.NextLarger(requestSegment);
+			var nextSmaller = sweepLine.NextSmaller(requestSegment);
 
-            //step 5
-            sweeplineCanidates.Reverse();
-            //sweeplineCanidates.Sort(new SegmentAngleComparer());
+			nextLargerTest = nextLarger;
+			nextSmallerTest = nextSmaller;
 
-            var nextLarger = sweepLine.NextLarger(requestSegment);
-            var nextSmaller = sweepLine.NextSmaller(requestSegment);
+			//step 6 
+			//add all segments containing poslast to the sweepline
+			foreach (var s in sweeplineCanidates)
+			{
+				sweepLine.Add(s);
+			}
 
-            nextLargerTest = nextLarger;
-            nextSmallerTest = nextSmaller;
-
-            //step 6 
-            //add all segments containing poslast to the sweepline
-            foreach (var s in sweeplineCanidates)
-            {
-                sweepLine.Add(s);
-            }
-
-            //step 7 create new Events
-            debugEvents.Clear();
-            deletedElements.Clear();
-            Debug.Log(sweeplineCanidates.Count);
-            if (sweeplineCanidates.Count > 0)
-            {
-                removeAssociatedEvents(sweeplineCanidates[0]);
-                removeAssociatedEvents(sweeplineCanidates[sweeplineCanidates.Count - 1]);
-                addEvents(sweeplineCanidates[0], nextSmaller);
-                addEvents(sweeplineCanidates[sweeplineCanidates.Count - 1], nextLarger);
-            }
-            else
-            {
-                addEvents(nextSmaller, nextLarger);
-            }
-        }
-
-
-        Vector2 sweepPos = Vector2.positiveInfinity;
-        List<Segment> sweeplineCanidates;
-        Segment nextLargerTest;
-        Segment nextSmallerTest;
-        List<SweepEvent> debugEvents = new();
-        List<SweepEvent> deletedElements = new();
-        public void debugDraw()
-
-        {
-            //Debug.Log("Debug");
+			//step 7 create new Events
+			debugEvents.Clear();
+			deletedElements.Clear();
+			Debug.Log(sweeplineCanidates.Count);
+			if (sweeplineCanidates.Count > 0)
+			{
+				removeAssociatedEvents(sweeplineCanidates[0]);
+				removeAssociatedEvents(sweeplineCanidates[sweeplineCanidates.Count - 1]);
+				addEvents(sweeplineCanidates[0], nextSmaller);
+				addEvents(sweeplineCanidates[sweeplineCanidates.Count - 1], nextLarger);
+			}
+			else
+			{
+				addEvents(nextSmaller, nextLarger);
+			}
+		}
 
 
-            Handles.color = Color.blue;
+		Vector2 sweepPos = Vector2.positiveInfinity;
+		List<Segment> sweeplineCanidates;
+		Segment nextLargerTest;
+		Segment nextSmallerTest;
+		List<SweepEvent> debugEvents = new();
+		List<SweepEvent> deletedElements = new();
+		public void debugDraw()
 
-            /*for(int i = 0; i < segments.Count; i++)
+		{
+			//Debug.Log("Debug");
+
+
+			Handles.color = Color.blue;
+
+			/*for(int i = 0; i < segments.Count; i++)
             {
                 Color c = new Color((i%5)/4f,((int)(i/5f)%5)/4f,0);
                 Handles.color = c;
@@ -214,36 +224,54 @@ namespace BentleyOttmann
             }*/
 
 
-            Handles.DrawWireCube(sweepPos, Vector3.one * 0.1f);
+			Handles.DrawWireCube(sweepPos, Vector3.one * 0.1f);
 
 
-            Handles.color = Color.yellow;
-            Handles.DrawDottedLine(new Vector2(Segment.currentSweepPosition.x, -10), new Vector2(Segment.currentSweepPosition.x, 10), 1);
-            Vector2 mouse = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            int num = 0;
-            foreach (var s in sweepLine)
-            {
-                float y = 0;
-                bool intersects;
-                if (GeometricPrimitives.GetLineIntersectionX(s, mouse, out y, out intersects))
-                {
+			Handles.color = Color.yellow;
+			Handles.DrawDottedLine(new Vector2(Segment.currentSweepPosition.x, -10), new Vector2(Segment.currentSweepPosition.x, 10), 1);
+			Vector2 mouse = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+			int num = 0;
+
+			/*
+			foreach (var s in segments)
+			{
+				Vector2 pa = s.start;
+				Vector2 pb = s.end;
+				Vector2 delta = pb - pa;
+				delta = delta.normalized;
+				Handles.color = testColours[num % testColours.Length];//Color.cyan;
+				Handles.DrawLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
+				Handles.color = Color.green;
+				Handles.DrawWireDisc(pa+delta*0.1f,Vector3.forward,0.1f);
+				Handles.color = Color.red;
+				Handles.DrawWireDisc(pb-delta*0.1f,Vector3.forward,0.1f);
+				num++;
+			}*/
+
+			num = 0;
+			foreach (var s in sweepLine)
+			{
+				float y = 0;
+				bool intersects;
+				if (GeometricPrimitives.GetLineIntersectionX(s, mouse, out y, out intersects))
+				{
 
 
 
-                    if (!intersects)
-                    {
-                        Handles.color = Color.blue;
-                    }
-                    else
-                    {
-                        Handles.color = Color.cyan;
+					if (!intersects)
+					{
+						Handles.color = Color.blue;
+					}
+					else
+					{
+						Handles.color = Color.cyan;
 
-                    }
-                    Handles.DrawWireCube(new Vector2(mouse.x, y), Vector3.one * 0.1f);
+					}
+					Handles.DrawWireCube(new Vector2(mouse.x, y), Vector3.one * 0.1f);
 
-                }
+				}
 
-                /*if (GeometricPrimitives.GetLineIntersectionX(s, Segment.currentSweepPosition, out y, out intersects))
+				/*if (GeometricPrimitives.GetLineIntersectionX(s, Segment.currentSweepPosition, out y, out intersects))
 				{
 					if (intersects)nextLarger
 					{
@@ -263,13 +291,13 @@ namespace BentleyOttmann
 					}
 				}*/
 
-                Handles.color = testColours[num % testColours.Length];
-                Handles.DrawLine(s.start, s.end, 4);
+				Handles.color = testColours[num % testColours.Length];
+				Handles.DrawLine(s.start, s.end, 4);
 
-                num++;
-            }
+				num++;
+			}
 
-            /*if (sweeplineCanidates != null)
+			/*if (sweeplineCanidates != null)
             {
                 num = 0;
                 foreach (var s in sweeplineCanidates)
@@ -279,40 +307,42 @@ namespace BentleyOttmann
                     num++;
                 }
             }*/
-            num = 0;
-            foreach ((int a, int b) in GraphEdges)
-            {
-                Vector2 pa = GraphNodes[a];
-                Vector2 pb = GraphNodes[b];
-                Vector2 delta = pb - pa;
-                //delta = delta.normalized;
-                Handles.color = testColours[num % testColours.Length];//Color.cyan;
-                //Handles.DrawLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
-                Handles.DrawLine(pa, pb, 1);
-                //Handles.DrawDottedLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
-                num += 1;
+			num = 0;
+			foreach ((int a, int b) in GraphEdges)
+			{
+				Vector2 pa = GraphNodes[a];
+				Vector2 pb = GraphNodes[b];
+				Vector2 delta = pb - pa;
+				//delta = delta.normalized;
+				Handles.color = testColours[num % testColours.Length];//Color.cyan;
+																	  //Handles.DrawLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
+				Handles.DrawLine(pa, pb, 1);
+				//Handles.DrawDottedLine(pa + delta * 0.1f, pb - delta * 0.1f, 1);
+				num += 1;
 
-            }
-            foreach (SweepEvent s in debugEvents)
-            {
-                Handles.color = Color.green;
-                Handles.DrawWireCube(s.point, Vector3.one * 0.3f);
-            }
-            foreach (SweepEvent s in deletedElements)
-            {
-                Handles.color = Color.red;
-                Handles.DrawWireCube(s.point, Vector3.one * 0.3f);
-            }
+			}
+			foreach (SweepEvent s in debugEvents)
+			{
+				Handles.color = Color.green;
+				Handles.DrawWireCube(s.point, Vector3.one * 0.3f);
+			}
+			foreach (SweepEvent s in deletedElements)
+			{
+				Handles.color = Color.red;
+				Handles.DrawWireCube(s.point, Vector3.one * 0.3f);
+			}
 
-            foreach (SweepEvent s in priorityQueue)
-            {
-                Handles.color = Color.yellow;
-                Handles.DrawWireCube(s.point, Vector3.one * 0.2f);
-            }
+			num = 0;
+			foreach (SweepEvent s in priorityQueue)
+			{
+				Handles.color = s.segment == null ? Color.yellow : Color.magenta;
+				Handles.DrawWireCube(s.point, Vector3.one * 0.2f * (1 + (num % 10) / 10f));
+				num++;
+			}
 
 
 
-            /*
+			/*
             if (nextLargerTest != null)
             {
 
@@ -326,9 +356,9 @@ namespace BentleyOttmann
                 Handles.DrawLine(nextSmallerTest.start, nextSmallerTest.end, 5);
             }*/
 
-        }
+		}
 
-    }
+	}
 
 }
 
