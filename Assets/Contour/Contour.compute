@@ -1,0 +1,85 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel GenerateContourSegments
+
+struct resultBufferStructure {
+	float3 pos1;
+	float3 pos2;
+	int containsSegment;
+};
+
+Buffer<float3> vertices;
+Buffer<float3> normals;
+Buffer<int> triangles;
+RWStructuredBuffer<resultBufferStructure> results;
+
+float3 cameraPos;
+
+int numTriangles;
+
+
+[numthreads(64, 1, 1)]
+void GenerateContourSegments(uint3 id : SV_DispatchThreadID)
+{
+	// TODO: insert actual code here!
+	if (id.x < numTriangles) {
+		int ind1 = triangles[3 * id.x];
+		int ind2 = triangles[3 * id.x + 1];
+		int ind3 = triangles[3 * id.x + 2];
+
+
+		float3 p1 = vertices[ind1];
+		float3 p2 = vertices[ind2];
+		float3 p3 = vertices[ind3];
+
+		float3 n1 = normals[ind1];
+		float3 n2 = normals[ind2];
+		float3 n3 = normals[ind3];
+
+		int containsSegment;
+		float dot1 = dot(cameraPos - p1, n1);
+		float dot2 = dot(cameraPos - p2, n2);
+		float dot3 = dot(cameraPos - p3, n3);
+
+
+
+		results[id.x].containsSegment = 0;
+		int n = 0;
+		if (dot1 * dot2 < 0) {
+			results[id.x].containsSegment = 1;
+			float ratio = dot1 / (dot1 - dot2);
+			if (n == 0) {
+				results[id.x].pos1 = ratio * p2 + (1 - ratio) * p1;
+			}
+			else {
+				results[id.x].pos2 = ratio * p2 + (1 - ratio) * p1;
+			}
+			n++;
+		}
+
+		if (dot1 * dot3 < 0) {
+			results[id.x].containsSegment = 1;
+			float ratio = dot1 / (dot1 - dot3);
+			if (n == 0) {
+				results[id.x].pos1 = ratio * p3+ (1 - ratio) * p1;
+			}
+			else {
+				results[id.x].pos2 = ratio * p3 + (1 - ratio) * p1;
+			}
+			n++;
+		}
+
+		if (dot2 * dot3 < 0) {
+			results[id.x].containsSegment = 1;
+			float ratio = dot2 / (dot2 - dot3);
+			if (n == 0) {
+				results[id.x].pos1 = ratio * p3 + (1 - ratio) * p2;
+			}
+			else {
+				results[id.x].pos2 = ratio * p3 + (1 - ratio) * p2;
+			}
+			n++;
+		}
+
+
+	}
+}
