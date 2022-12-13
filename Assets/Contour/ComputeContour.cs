@@ -7,10 +7,10 @@ using UnityEngine;
 
 public class ComputeContour : MonoBehaviour
 {
-    struct ResultBufferStruct
+    struct ResultBufferStruct : ISegment
     {
-        public Vector3 pos1;
-        public Vector3 pos2;
+        public Vector3 start { set; get; }
+        public Vector3 end { set; get; }
         public int containsSegment;
     }
 
@@ -25,7 +25,7 @@ public class ComputeContour : MonoBehaviour
 
     private ComputeBuffer resultBuffer;
 
-	int containsSegment;
+    int containsSegment;
     void Start()
     {
         mf = GetComponent<MeshFilter>();
@@ -56,7 +56,7 @@ public class ComputeContour : MonoBehaviour
         cs.SetBuffer(kernelId, "normals", normalBuffer);
         cs.SetBuffer(kernelId, "results", resultBuffer);
 
-        cs.SetInt("numTriangles",triBuffer.count/3);
+        cs.SetInt("numTriangles", triBuffer.count / 3);
 
         Debug.Log(triBuffer.stride);
         Debug.Log(vertBuffer.stride);
@@ -66,10 +66,34 @@ public class ComputeContour : MonoBehaviour
 
     // Update is called once per frame
 
-
+    private BentleyOttmann.BentleyOttman bo;
     void Update()
     {
-        CalcContourSegments();
+
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            CalcContourSegments();
+
+
+            bo = new BentleyOttmann.BentleyOttman(contours);
+
+        }
+
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            bo.testStep();
+        }
+        if (Input.GetKey(KeyCode.RightShift))
+        {
+            if (bo != null)
+            {
+                for (int i = 0; i < 300; i++)
+                    bo.testStep();
+            }
+        }
+        
+        //CalcContourSegments();
     }
 
 
@@ -89,23 +113,31 @@ public class ComputeContour : MonoBehaviour
         ResultBufferStruct[] results = new ResultBufferStruct[numTriangles];
         resultBuffer.GetData(results);
 
-        contours = results.Where(x => x.containsSegment!=0).ToArray();
+        contours = results.Where(x => x.containsSegment != 0).Cast<ISegment>().ToList();
 
 
     }
-    private ResultBufferStruct[] contours;
+    private List<ISegment> contours;
 
 
     private void OnDrawGizmos()
     {
-        if (contours != null) { 
-        Handles.matrix = transform.localToWorldMatrix;
-        foreach (var c in contours) {
-            Handles.color = Color.black;
-            Handles.DrawLine(c.pos1,c.pos2);      
+        if (contours != null)
+        {
+            Handles.matrix = transform.localToWorldMatrix;
+            foreach (var c in contours)
+            {
+                Handles.color = Color.black;
+                Handles.DrawLine(c.start, c.end);
+            }
+
         }
-        
+
+        if (bo != null)
+        {
+            bo.debugDraw();
         }
+
     }
 
     private void OnDestroy()

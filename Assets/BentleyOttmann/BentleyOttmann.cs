@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using Utils;
 
 
 namespace BentleyOttmann
@@ -15,7 +14,7 @@ namespace BentleyOttmann
 
         //PriorityQueue<SweepEvent, SweepEvent> priorityQueue;
         SortedSet<SweepEvent> priorityQueue;
-        List<Segment> segments = new();
+        List<Segment> segments;
 
         Tree<Segment> sweepLine;
 
@@ -28,10 +27,7 @@ namespace BentleyOttmann
         public BentleyOttman(List<(Vector2, Vector2)> segmentsRaw)
         {
 
-
-            priorityQueue = new(new PriorityQueueOrdering());
-
-
+            segments = new();
 
 
             foreach (var s in segmentsRaw)
@@ -39,8 +35,27 @@ namespace BentleyOttmann
                 var ns = new Segment(s.Item1, s.Item2);
                 segments.Add(ns);
             }
+            init();
+        }
+
+        public BentleyOttman(IEnumerable<ISegment> segments)
+        {
+            this.segments = new();
+
+
+            foreach (var s in segments)
+            {
+                var ns = new Segment(s.start, s.end);
+                this.segments.Add(ns);
+            }
+            init();
+        }
+
+        private void init()
+        {
             segments.Sort(new InitialSegmentOrdering());
 
+            priorityQueue = new(new PriorityQueueOrdering());
             foreach (var ns in segments)
             {
                 SweepEvent start = new(ns.start, ns);
@@ -52,6 +67,17 @@ namespace BentleyOttmann
             }
 
             sweepLine = new();
+
+
+            if (testColours == null) {
+                int n = 10;
+                testColours = new Color[n];
+                for (int i = 0; i < n; i++) {
+                    testColours[i] =Color.HSVToRGB(i/(float)n,1,1);
+                }
+                
+            }
+
         }
 
         private void addEvents(Segment a, Segment b)
@@ -214,7 +240,7 @@ namespace BentleyOttmann
                 var lastSegment = sweeplineCanidates[sweeplineCanidates.Count - 1];
                 removeAssociatedEvents(firstSegment);
                 removeAssociatedEvents(lastSegment);
-                addEvents(nextSmaller,firstSegment);
+                addEvents(nextSmaller, firstSegment);
                 addEvents(lastSegment, nextLarger);
             }
             else
@@ -317,7 +343,7 @@ namespace BentleyOttmann
                 Handles.color = testColours[num % testColours.Length];
                 Handles.DrawLine(s.start, s.end, 4);
                 if (s.associatedEvent != null)
-                    Handles.DrawWireDisc(s.associatedEvent.point, Vector3.forward, 0.5f + 0.1f*(num%5));
+                    Handles.DrawWireDisc(s.associatedEvent.point, Vector3.forward, 0.5f + 0.1f * (num % 5));
                 num++;
             }
 
