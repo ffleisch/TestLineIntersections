@@ -223,7 +223,7 @@ public class IntersectionTester : MonoBehaviour
                 if (!node.IsLeaf) { continue; }
 
                 Handles.color = Color.blue;
-                if (node.Object.intersects(testingSegment)) { Handles.color = Color.red; }
+                if (node.Object.intersects(testingSegment,out _)) { Handles.color = Color.red; }
                 Handles.DrawWireCube(node.AABB.center, node.AABB.size + (Vector3.one * 0.05f));
             };
         }
